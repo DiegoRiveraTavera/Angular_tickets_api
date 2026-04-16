@@ -79,23 +79,24 @@ fastify.post('/', async (req, res) => {
     priority = 'media',
     created_by = null,
     assigned_to = null,
-    group_id
+    group_id,
+    due_date = null 
   } = req.body
 
   const result = await pool.query(
-    `INSERT INTO tickets (title, description, status, priority, created_by, assigned_to, group_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-    [title, description, status, priority, created_by, assigned_to, group_id]
+    `INSERT INTO tickets (title, description, status, priority, created_by, assigned_to, group_id, due_date)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+    [title, description, status, priority, created_by, assigned_to, group_id, due_date]
   )
   return res.status(201).send(result.rows[0])
 })
 
 fastify.put('/:id', async (req, res) => {
-  const { title, description, status, priority, assigned_to } = req.body
+  const { title, description, status, priority, assigned_to, due_date = null } = req.body  // ← agregar
   const result = await pool.query(
-    `UPDATE tickets SET title=$1, description=$2, status=$3, priority=$4, assigned_to=$5, updated_at=NOW()
-     WHERE id=$6 RETURNING *`,
-    [title, description, status, priority, assigned_to, req.params.id]
+    `UPDATE tickets SET title=$1, description=$2, status=$3, priority=$4, assigned_to=$5, due_date=$6, updated_at=NOW()
+     WHERE id=$7 RETURNING *`,
+    [title, description, status, priority, assigned_to, due_date, req.params.id]  // ← $6 y $7
   )
   if (!result.rows[0]) return res.status(404).send({ message: 'Ticket no encontrado' })
   return result.rows[0]
