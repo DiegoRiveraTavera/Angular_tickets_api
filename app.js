@@ -4,6 +4,33 @@ fastify.register(require('@fastify/cors'), { origin: '*' })
 
 const { Pool } = require('pg')
 const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+const { logRequest, logError } = require('./logger')
+
+// ✅ Hook: registra cada request
+fastify.addHook('onRequest', async (req) => {
+  req.startTime = Date.now()
+})
+
+fastify.addHook('onResponse', async (req, res) => {
+  await logRequest({
+    method: req.method,
+    endpoint: req.url,
+    ip: req.ip,
+    statusCode: res.statusCode,
+    responseTimeMs: Date.now() - (req.startTime || Date.now())
+  })
+})
+
+fastify.addHook('onError', async (req, res, error) => {
+  await logError({
+    method: req.method,
+    endpoint: req.url,
+    ip: req.ip,
+    statusCode: res.statusCode,
+    errorMessage: error.message,
+    stackTrace: error.stack
+  })
+})
 
 // GET /
 fastify.get('/', async (req, res) => {
